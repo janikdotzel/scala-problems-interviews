@@ -238,16 +238,68 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     * Medium difficulty problems
     */
   // run-length encoding
-  override def rle: RList[(T, Int)] = ???
+  override def rle: RList[(T, Int)] = {
+
+    @tailrec
+    def rleTailRec(remaining: RList[T], current: (T, Int), accumulator: RList[(T, Int)]): RList[(T, Int)] =
+      if (remaining.isEmpty) (current :: accumulator).reverse
+      else if (current._1 == remaining.head) rleTailRec(remaining.tail, (current._1, current._2 + 1), accumulator)
+      else rleTailRec(remaining.tail, (remaining.head, 1), current :: accumulator)
+
+    rleTailRec(this.tail, (this.head, 1), RNil)
+  }
 
   // duplicate each element a number of times in a row
-  override def duplicateEach(k: Int): RList[T] = ???
+  override def duplicateEach(k: Int): RList[T] = {
+
+    @tailrec
+    def duplicateEachTailRec(remaining: RList[T], count: Int, accumulator: RList[T]): RList[T] = {
+      if (remaining.isEmpty && count == 0) accumulator.reverse
+      else if (count == 0) duplicateEachTailRec(remaining.tail, k, accumulator)
+      else duplicateEachTailRec(remaining, count - 1, remaining.head :: accumulator)
+    }
+
+    duplicateEachTailRec(this, k, RNil)
+  }
 
   // rotate by a number of positions to the left
-  override def rotate(k: Int): RList[T] = ???
+  override def rotate(k: Int): RList[T] = {
+
+    @tailrec
+    def rotateTailRec(k: Int, accumulator: RList[T]): RList[T] = {
+      if (this.isEmpty) accumulator
+      else if (k == 0) accumulator
+      else rotateTailRec(k - 1, accumulator.tail ++ accumulator.head)
+    }
+
+    rotateTailRec(k % this.length, RNil)
+  }
 
   // random samples
-  override def sample(k: Int): RList[T] = ???
+  override def sample(k: Int): RList[T] = {
+
+    @tailrec
+    def sampleTailRec(k: Int, accumulator: RList[T]): RList[T] = {
+      if (k < 0) RNil
+      else if (k == 0) accumulator
+      else {
+        val randomIndex = Random.nextInt(this.length)
+        val randomElement = this(randomIndex)
+        sampleTailRec(k - 1, randomElement :: accumulator)
+      }
+    }
+
+    sampleTailRec(k, RNil)
+
+//    def sampleElegant: RList[T] =
+//      RList
+//        .from(1 to k)
+//        .map( _ => Random.nextInt(this.length) )
+//        .map( index => this(index))
+//
+//    if (k < 0) RNil
+//    else sampleElegant
+  }
 
   /**
     * Hard problems
