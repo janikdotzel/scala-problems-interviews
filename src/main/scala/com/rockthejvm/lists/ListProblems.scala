@@ -9,8 +9,11 @@ sealed abstract class RList[+T] {
     * Standard functions
     */
   def head: T
+
   def tail: RList[T]
+
   def isEmpty: Boolean
+
   def ::[S >: T](elem: S): RList[S] = new ::(elem, this)
 
   /**
@@ -33,7 +36,9 @@ sealed abstract class RList[+T] {
 
   // the big 3
   def map[S](f: T => S): RList[S]
+
   def flatMap[S](f: T => RList[S]): RList[S]
+
   def filter(f: T => Boolean): RList[T]
 
   /**
@@ -51,19 +56,27 @@ sealed abstract class RList[+T] {
   // random sample
   def sample(k: Int): RList[T]
 
+  // sorting the list in the order defined by the ordering object
+  def sorted[S >: T](ordering: Ordering[S]): RList[S]
+
   /**
     * Hard problems
     */
   // sorting the list in the order defined by the Ordering object
   def insertionSort[S >: T](ordering: Ordering[S]): RList[S]
+
   def mergeSort[S >: T](ordering: Ordering[S]): RList[S]
+
   def quickSort[S >: T](ordering: Ordering[S]): RList[S]
 }
 
 case object RNil extends RList[Nothing] {
   override def head: Nothing = throw new NoSuchElementException
+
   override def tail: RList[Nothing] = throw new NoSuchElementException
+
   override def isEmpty: Boolean = true
+
   override def toString: String = "[]"
 
   /**
@@ -86,7 +99,9 @@ case object RNil extends RList[Nothing] {
 
   // the big 3
   override def map[S](f: Nothing => S): RList[S] = RNil
+
   override def flatMap[S](f: Nothing => RList[S]): RList[S] = RNil
+
   override def filter(f: Nothing => Boolean): RList[Nothing] = RNil
 
   /**
@@ -108,13 +123,18 @@ case object RNil extends RList[Nothing] {
     * Hard problems
     */
   // sorting
-  override def insertionSort[S >: Nothing](ordering: Ordering[S]): RList[S] = ???
-  override def mergeSort[S >: Nothing](ordering: Ordering[S]): RList[S] = ???
-  override def quickSort[S >: Nothing](ordering: Ordering[S]): RList[S] = ???
+  override def insertionSort[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
+
+  override def mergeSort[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
+
+  override def quickSort[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
+
+  override def sorted[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
   override def isEmpty: Boolean = false
+
   override def toString: String = {
     @tailrec
     def toStringTailrec(remaining: RList[T], result: String): String = {
@@ -182,14 +202,14 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
 
   // remove an element
   override def removeAt(index: Int): RList[T] = {
-//    @tailrec
-//    def removeAtTailRec(remaining: RList[T], i: Int, accumulator: RList[T]): RList[T] =
-//      if (remaining.isEmpty) accumulator.reverse
-//      else if (i == index) removeAtTailRec(remaining.tail, i + 1, accumulator)
-//      else removeAtTailRec(remaining.tail, i + 1, remaining.head :: accumulator)
-//
-//    if (index < 0) this
-//    else removeAtTailRec(this, 0, RNil)
+    //    @tailrec
+    //    def removeAtTailRec(remaining: RList[T], i: Int, accumulator: RList[T]): RList[T] =
+    //      if (remaining.isEmpty) accumulator.reverse
+    //      else if (i == index) removeAtTailRec(remaining.tail, i + 1, accumulator)
+    //      else removeAtTailRec(remaining.tail, i + 1, remaining.head :: accumulator)
+    //
+    //    if (index < 0) this
+    //    else removeAtTailRec(this, 0, RNil)
 
     // Even Better
     @tailrec
@@ -284,27 +304,60 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
       else if (k == 0) accumulator
       else {
         val randomIndex = Random.nextInt(this.length)
-        val randomElement = this(randomIndex)
+        val randomElement = this (randomIndex)
         sampleTailRec(k - 1, randomElement :: accumulator)
       }
     }
 
     sampleTailRec(k, RNil)
 
-//    def sampleElegant: RList[T] =
-//      RList
-//        .from(1 to k)
-//        .map( _ => Random.nextInt(this.length) )
-//        .map( index => this(index))
-//
-//    if (k < 0) RNil
-//    else sampleElegant
+    //    def sampleElegant: RList[T] =
+    //      RList
+    //        .from(1 to k)
+    //        .map( _ => Random.nextInt(this.length) )
+    //        .map( index => this(index))
+    //
+    //    if (k < 0) RNil
+    //    else sampleElegant
   }
 
   /**
     * Hard problems
     */
-  override def insertionSort[S >: T](ordering: Ordering[S]): RList[S] = ???
+  override def insertionSort[S >: T](ordering: Ordering[S]): RList[S] = {
+    /*
+      insertSorted(4, [], [1,2,3,5]) =
+      insertSorted(4, [1], [2,3,5]) =
+      insertSorted(4, [2,1], [3,5]) =
+      insertSorted(4, [3,2,1], [5]) =
+      [3,2,1].reverse + (4 :: [5]) =
+      [1,2,3,4,5]
+      Complexity: O(N)
+     */
+    @tailrec
+    def insertSorted(element: T, before: RList[S], after: RList[S] ): RList[S] = {
+      if (after.isEmpty || ordering.lt(element, after.head)) before.reverse ++ (element :: after)
+      else insertSorted(element, after.head :: before, after.tail)
+    }
+
+    /*
+  [3,1,4,2,5].sorted = insertSortTailrec([3,1,4,2,5], []) =
+    = insertSortTailrec([1,4,2,5], [3])
+    = insertSortTailrec([4,2,5], [1,3])
+    = insertSortTailrec([2,5], [1,3,4])
+    = insertSortTailrec([5], [1,2,3,4])
+    = insertSortTailrec([], [1,2,3,4,5])
+    = [1,2,3,4,5]
+    Complexity: O(N^2)
+    */
+    @tailrec
+    def insertionSortTailRec(remaining: RList[T], accumulator: RList[S]): RList[S] = {
+      if (remaining.isEmpty) accumulator
+      else insertionSortTailRec(remaining.tail, insertSorted(remaining.head, RNil, accumulator))
+    }
+
+    insertionSortTailRec(this, RNil)
+  }
 
   override def mergeSort[S >: T](ordering: Ordering[S]): RList[S] = ???
 
